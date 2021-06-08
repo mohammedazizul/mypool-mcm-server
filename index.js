@@ -5,41 +5,46 @@ const fileUpload = require('express-fileupload');   // adding express-fileupload
 const md5 = require('md5')  // adding hashing with md5 package npm md5
 
 // to connect with mysql
+// phpMyAdmin settings
 var pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'mcm_test_db'
+    database: 'mypool-mcm-db'
 });
 
 // initializing the app
 const app = express();
 
-// middle wire
+// middle wires
 app.use(cors());
 app.use(fileUpload());
 app.use(express.json());
 
-const port = 3002;
+const port = 3002;  // local host post number
 
-// to register a new user
-// INSERT INTO USER_AUTH TABLES
+
+
+// to register a new staff 
+// INSERT data into STAFF_AUTH table
 app.post('/registerNewUser', (req, res) => {
-    const userId = req.body.staff_id;
-    const username = req.body.username;
-    const password = req.body.password;
-    const hashedPassword = md5(password);   // converting password into hash md5
+    const id = req.body.staff_id;
     // to set up the role of the new user 
     // const role = 'admin';
     // const role = 'part-time-staff';
     const role = 'full-time-staff';
+    const username = req.body.username;
+    const password = req.body.password;
+    const hashedPassword = md5(password);   // converting password into hash md5
+    const status = 0;
+    const newAccount = 1;
 
-    const sqlInsertUser = 
-        "INSERT INTO USER_AUTH (userId, username, password, role) VALUES (?,?,?,?)";
+    const sqlQueryToInsert = 
+        "INSERT INTO STAFF_AUTH (staff_id, role, username, password, account_status, new_account) VALUES (?,?,?,?,?,?)";
     
-        pool.query(sqlInsertUser, [userId, username, hashedPassword, role], (err, result) => {
+        pool.query(sqlQueryToInsert, [ id, role, username, hashedPassword, status, newAccount], (err, result) => {
         if(err){ 
-            console.log("INSERT into USERS error: ", err) 
+            console.log("INSERT into staff_auth error: ", err) 
         }
         else {
             console.log("Result: ", result);
@@ -49,19 +54,20 @@ app.post('/registerNewUser', (req, res) => {
 })
 
 
-// SELECT specific username and password from USERS table
-// to validate the login process
+
+// to validate staff login
+// SELECT all id, username and password from STAFF_AUTH table and match with the staff given data
 app.post('/validateUserLogin', (req, res) => {
-    const userId = req.body.staff_id;
+    const id = req.body.staff_id;
     const username = req.body.username;
     const password = req.body.password;
     const hashedPassword = md5(password);   // converting password into hash md5
     // console.log(username, password);
 
-    const sqlFindUser = 
-        "SELECT * FROM USER_AUTH WHERE userId = ? AND username = ? AND password = ?";
+    const sqlValidateUser = 
+        "SELECT * FROM STAFF_AUTH WHERE staff_id = ? AND username = ? AND password = ?";
 
-    pool.query(sqlFindUser, [userId, username, hashedPassword], (err, result) => {
+    pool.query(sqlValidateUser, [id, username, hashedPassword], (err, result) => {
         console.log(result)
         if (err) {
             console.log("Error: ", err);
@@ -78,17 +84,46 @@ app.post('/validateUserLogin', (req, res) => {
 })
 
 
-// INSERT INTO SECURITY_QUESTIONS TABLES
+
+// to increase the value of account_status
+// increment staff account status from STAFF_AUTH table
+app.patch('/increaseUserStatus',(req, res) => {
+
+    console.log("req.body : ", req.body);
+
+    const id = req.body.staff_id;
+    const username = req.body.username;
+
+    console.log("staff id, username : ", id, username);
+
+    const sqlQueryIncreaseAccountStatus =
+     "UPDATE STAFF_AUTH SET account_status = account_status + 1 WHERE staff_id = ? AND username = ?";
+
+    pool.query(sqlQueryIncreaseAccountStatus, [id, username], (err, result) => {
+        if (err) {
+            console.log("account status update Error : ", err);
+            res.send(err);
+        }
+        else {
+            console.log("account status updated : ", result);
+            res.send(result);
+        }
+    })
+})
+
+
+
 // to save security questions answers
+// INSERT INTO STAFF_VERIFICATION TABLES
 app.post('/setSecurityQuestions', (req, res) => {
     const staff_id = req.body.id;
     const ansOne = req.body.town;
     const ansTwo = req.body.color;
 
-    const sqlInsetAnswer = 
-        "INSERT INTO SECURITY_QUESTIONS (staff_id, ansOne, ansTwo) VALUES (?,?,?)";
+    const sqlQueryInsetAnswer = 
+        "INSERT INTO STAFF_VERIFICATION (staff_id, ans_one, ans_two) VALUES (?,?,?)";
     
-        pool.query(sqlInsetAnswer, [staff_id, ansOne, ansTwo], (err, result) => {
+        pool.query(sqlQueryInsetAnswer, [staff_id, ansOne, ansTwo], (err, result) => {
         if (err) { 
             console.log("INSERT answer error: ", err) 
             res.send(err);
@@ -109,7 +144,7 @@ app.post('/checkSecurityQuestions', (req, res) => {
     const ansTwo = req.body.color;
 
     const sqlInsetAnswer = 
-        "SELECT * FROM SECURITY_QUESTIONS WHERE staff_id = ? AND ansOne = ? AND ansTwo = ?";
+        "SELECT * FROM STAFF_VERIFICATION WHERE staff_id = ? AND ans_one = ? AND ans_two = ?";
     
         pool.query(sqlInsetAnswer, [staff_id, ansOne, ansTwo], (err, result) => {
         if (err) { 
@@ -134,7 +169,7 @@ app.patch('/updateSecurityQuestions', (req, res) => {
     console.log("staff_id, ansOne, ansTwo : ", staff_id, ansOne, ansTwo);
 
     const sqlUpdateAnswer = 
-        "UPDATE SECURITY_QUESTIONS SET ansOne = ? , ansTwo = ? WHERE staff_id = ?";
+        "UPDATE STAFF_VERIFICATION SET ans_one = ? , ans_two = ? WHERE staff_id = ?";
 
         pool.query(sqlUpdateAnswer, [ansOne, ansTwo, staff_id], (err, result) => {
         if (err) { 
@@ -149,10 +184,39 @@ app.patch('/updateSecurityQuestions', (req, res) => {
 })
 
 
+
+// UPDATE a PASSWORD from USER_AUTH table
+app.patch('/resetPassword',(req, res) => {
+
+    console.log("req.body : ", req.body);
+
+    const staff_id = req.body.id;
+    const username = req.body.username;
+    const password = req.body.newPassword;
+    const hashedPassword = md5(password);   // converting password into hash md5
+    const new_staff = req.body.newUser;
+
+    console.log("staff id, username, password, newUser : ", staff_id, username, hashedPassword, new_staff);
+
+    const sqlResetPassQuery = "UPDATE STAFF_AUTH SET password = ?, new_account = ? WHERE staff_id = ? AND username = ?";
+
+    pool.query(sqlResetPassQuery, [hashedPassword, new_staff, staff_id, username], (err, result) => {
+        if (err) {
+            console.log("password update Error : ", err);
+            res.send(err);
+        }
+        else {
+            console.log("password updated : ", result);
+            res.send(result);
+        }
+    })
+})
+
+
 // SELECT all PENDING job details from the JOB table
 app.get('/getPendingJob',(req, res) => {
     
-    const sqlGetPendingJobQuery = "SELECT * FROM JOB WHERE jobStatus = 'PENDING'";
+    const sqlGetPendingJobQuery = "SELECT * FROM JOB WHERE status = 'PENDING' OR status = 'NEW'";
 
     pool.query(sqlGetPendingJobQuery, (err, result) => {
         if (err) { 
@@ -170,7 +234,7 @@ app.get('/getPendingJob',(req, res) => {
 // SELECT all COMPLETED job details from the JOB table
 app.get('/getCompletedJob',(req, res) => {
     
-    const sqlGetCompletedJobQuery = "SELECT * FROM JOB WHERE jobStatus = 'COMPLETED'";
+    const sqlGetCompletedJobQuery = "SELECT * FROM JOB WHERE status = 'COMPLETED'";
 
     pool.query(sqlGetCompletedJobQuery, (err, result) => {
         if (err) { 
@@ -185,57 +249,7 @@ app.get('/getCompletedJob',(req, res) => {
 })
 
 
-// UPDATE a PASSWORD from USER_AUTH table
-app.patch('/resetPassword',(req, res) => {
 
-    console.log("req.body : ", req.body);
-
-    const userId = req.body.id;
-    const username = req.body.username;
-    const password = req.body.newPassword;
-    const hashedPassword = md5(password);   // converting password into hash md5
-    const newUser = req.body.newUser;
-
-    console.log("staff id, username, password, newUser : ", userId, username, hashedPassword, newUser);
-
-    const sqlResetPassQuery = "UPDATE USER_AUTH SET password = ?, newUser = ? WHERE userId = ? AND username = ?";
-
-    pool.query(sqlResetPassQuery, [hashedPassword, newUser, userId, username], (err, result) => {
-        if (err) {
-            console.log("password update Error : ", err);
-            res.send(err);
-        }
-        else {
-            console.log("password updated : ", result);
-            res.send(result);
-        }
-    })
-})
-
-
-// UPDATE a userStatus from USER_AUTH table
-app.patch('/increaseUserStatus',(req, res) => {
-
-    console.log("req.body : ", req.body);
-
-    const userId = req.body.staff_id;
-    const username = req.body.username;
-
-    console.log("staff id, username : ", userId, username);
-
-    const sqlUpdateUserStatusQuery = "UPDATE USER_AUTH SET userStatus = userStatus + 1 WHERE userId = ? AND username = ?";
-
-    pool.query(sqlUpdateUserStatusQuery, [userId, username], (err, result) => {
-        if (err) {
-            console.log("userStatus update Error : ", err);
-            res.send(err);
-        }
-        else {
-            console.log("userStatus updated : ", result);
-            res.send(result);
-        }
-    })
-})
 
 
 // reference to upload in BLOB type column
@@ -267,7 +281,7 @@ app.patch('/updateJobStatus/:jobId',(req, res) => {
 
     console.log("job id , remarks, status, image data : ",id, remarks, status, newImg);
 
-    const sqlUpdateJobQuery = "UPDATE JOB SET jobStatus = ?, remarks = ?, completionImage = ? WHERE id = ?";
+    const sqlUpdateJobQuery = "UPDATE JOB SET status = ?, remarks = ?, picture = ? WHERE job_id = ?";
 
     pool.query(sqlUpdateJobQuery, [status, remarks, newImg, id], (err, result) => {
         if (err) {
@@ -282,6 +296,29 @@ app.patch('/updateJobStatus/:jobId',(req, res) => {
 })
 
 //-------------------------------------- TEST QUERY --------------------------------------//
+
+// to register a new user
+// INSERT INTO USER_AUTH TABLES
+// const id = 100100;
+// const role = 'admin';
+// const username = 'admin';
+// const password = '123456';
+// const hashedPassword = md5(password);   // converting password into hash md5
+// const status = 0;
+// const newAccount = 1;
+
+// const sqlInsertUser = 
+//     "INSERT INTO STAFF_AUTH (staff_id, role, username, password, account_status, new_account) VALUES (?,?,?,?,?,?)";
+
+//     pool.query(sqlInsertUser, [ id, role, username, hashedPassword, status, newAccount], (err, result) => {
+//     if(err){ 
+//         console.log("INSERT into staff_auth error: ", err) 
+//     }
+//     else {
+//         console.log("Result: ", result);
+//         res.send(result);
+//     }
+// })
 
 // TEST QUERY to DELETE from USERS
 // const userId = 100101;
@@ -331,7 +368,7 @@ app.patch('/updateJobStatus/:jobId',(req, res) => {
 // })
 
 // TESTING hashing with md5 - package npm md5
-// const pass = '12345';
+// const pass = '123456';
 // console.log("password: ",pass);
 // const hashedPass = md5(pass);
 // console.log("hashed: ",hashedPass);
