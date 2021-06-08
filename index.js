@@ -20,17 +20,16 @@ app.use(cors());
 app.use(fileUpload());
 app.use(express.json());
 
-// to upload image in a folder
-app.use(express.static('job-image'));
-
 const port = 3002;
 
-// INSERT INTO USER_AUTH TABLES
 // to register a new user
+// INSERT INTO USER_AUTH TABLES
 app.post('/registerNewUser', (req, res) => {
     const userId = req.body.staff_id;
     const username = req.body.username;
     const password = req.body.password;
+    const hashedPassword = md5(password);   // converting password into hash md5
+    // to set up the role of the new user 
     // const role = 'admin';
     // const role = 'part-time-staff';
     const role = 'full-time-staff';
@@ -38,8 +37,10 @@ app.post('/registerNewUser', (req, res) => {
     const sqlInsertUser = 
         "INSERT INTO USER_AUTH (userId, username, password, role) VALUES (?,?,?,?)";
     
-        pool.query(sqlInsertUser, [userId, username, password, role], (err, result) => {
-        if(err){ console.log("INSERT into USERS error: ", err) }
+        pool.query(sqlInsertUser, [userId, username, hashedPassword, role], (err, result) => {
+        if(err){ 
+            console.log("INSERT into USERS error: ", err) 
+        }
         else {
             console.log("Result: ", result);
             res.send(result);
@@ -54,12 +55,13 @@ app.post('/validateUserLogin', (req, res) => {
     const userId = req.body.staff_id;
     const username = req.body.username;
     const password = req.body.password;
+    const hashedPassword = md5(password);   // converting password into hash md5
     // console.log(username, password);
 
     const sqlFindUser = 
         "SELECT * FROM USER_AUTH WHERE userId = ? AND username = ? AND password = ?";
 
-    pool.query(sqlFindUser, [userId, username, password], (err, result) => {
+    pool.query(sqlFindUser, [userId, username, hashedPassword], (err, result) => {
         console.log(result)
         if (err) {
             console.log("Error: ", err);
@@ -191,13 +193,14 @@ app.patch('/resetPassword',(req, res) => {
     const userId = req.body.id;
     const username = req.body.username;
     const password = req.body.newPassword;
+    const hashedPassword = md5(password);   // converting password into hash md5
     const newUser = req.body.newUser;
 
-    console.log("staff id, username, password, newUser : ", userId, username, password, newUser);
+    console.log("staff id, username, password, newUser : ", userId, username, hashedPassword, newUser);
 
     const sqlResetPassQuery = "UPDATE USER_AUTH SET password = ?, newUser = ? WHERE userId = ? AND username = ?";
 
-    pool.query(sqlResetPassQuery, [password, newUser, userId, username], (err, result) => {
+    pool.query(sqlResetPassQuery, [hashedPassword, newUser, userId, username], (err, result) => {
         if (err) {
             console.log("password update Error : ", err);
             res.send(err);
@@ -328,19 +331,19 @@ app.patch('/updateJobStatus/:jobId',(req, res) => {
 // })
 
 // TESTING hashing with md5 - package npm md5
-const pass = '12345';
-console.log("password: ",pass);
-const hashedPass = md5(pass);
-console.log("hashed: ",hashedPass);
+// const pass = '12345';
+// console.log("password: ",pass);
+// const hashedPass = md5(pass);
+// console.log("hashed: ",hashedPass);
 
-const pass1 = "abc123";
-const pass2 = "e99a18c428cb38d5f260853678922e03"
+// const pass1 = "abc123";
+// const pass2 = "e99a18c428cb38d5f260853678922e03"
 
-if( md5(pass1) === pass2){
-    console.log("Matched !");
-}else{
-    console.log("No Matched !");
-}
+// if( md5(pass1) === pass2){
+//     console.log("Matched !");
+// }else{
+//     console.log("No Matched !");
+// }
 
 
 
