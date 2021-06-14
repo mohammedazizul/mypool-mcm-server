@@ -387,28 +387,42 @@ app.patch('/updateJobStatus/:jobId',(req, res) => {
 //                 AND
 //                     j.status = 'completed'
 //                 `;
-
-// const query = `SELECT *
-//                         FROM job j 
-//                     JOIN pool_details pd
-//                         ON pd.pool_id = j.pool_id
-//                     JOIN client_details cd
-//                         ON cd.client_id = pd.client_id
-//                     JOIN staff_job sj
-//                         ON sj.job_id = j.job_id
-//                     WHERE
-//                         sj.staff_id = 100105
-//                         AND
-//                         j.status = 'new'
-//                     `;
-// pool.query(query, (err, result) => {
-//     if (err) { 
-//         console.log("get job Error : ",err);
-//     }
-//     else {
-//         console.log(result);
-//     }
-// })
+// const queryToGetJob = `SELECT DISTINCT j.job_id, j.status, j.date, sd.full_name, cd.client_name, cd.address, cd.phone
+// FROM job j 
+// JOIN pool_details pd
+// ON pd.pool_id = j.pool_id
+// JOIN client_details cd
+// ON cd.client_id = pd.client_id
+// JOIN staff_job sj
+// ON sj.job_id = j.job_id
+// JOIN staff_details sd
+// ON sj.staff_id = sd.staff_id
+// WHERE
+// sj.staff_id = ?
+// AND
+// j.status = 'new' OR j.status = 'pending'
+// `;
+const query = `SELECT *
+                        FROM job j 
+                    JOIN pool_details pd
+                        ON pd.pool_id = j.pool_id
+                    JOIN client_details cd
+                        ON cd.client_id = pd.client_id
+                    JOIN staff_job sj
+                        ON sj.job_id = j.job_id
+                    WHERE
+                        sj.staff_id = 100115
+                        AND
+                        j.status = 'new'
+                    `;
+pool.query(query, (err, result) => {
+    if (err) { 
+        console.log("get job Error : ",err);
+    }
+    else {
+        console.log(result);
+    }
+})
 
 // TEST QUERY to INSERT into JOB
 // const sqlINSERT = 
