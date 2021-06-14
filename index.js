@@ -136,6 +136,7 @@ app.post('/setSecurityQuestions', (req, res) => {
 })
 
 
+
 // CHECK SECURITY_QUESTIONS TABLES
 // to check security questions answers
 app.post('/checkSecurityQuestions', (req, res) => {
@@ -157,6 +158,7 @@ app.post('/checkSecurityQuestions', (req, res) => {
         }
     })
 })
+
 
 
 // UPDATE INTO SECURITY_QUESTIONS TABLES
@@ -213,12 +215,30 @@ app.patch('/resetPassword',(req, res) => {
 })
 
 
-// SELECT all PENDING job details from the JOB table
-app.get('/getPendingJob',(req, res) => {
-    
-    const sqlGetPendingJobQuery = "SELECT * FROM JOB WHERE status = 'PENDING' OR status = 'NEW'";
 
-    pool.query(sqlGetPendingJobQuery, (err, result) => {
+// SELECT all PENDING and NEW job details from the JOB table
+app.post('/getNewAndPendingJob',(req, res) => {
+
+    // console.log(req.body);
+    const id = req.body.staffID;
+
+    const queryToGetJob = `SELECT DISTINCT j.job_id, j.status, j.date, sd.full_name, cd.client_name, cd.address, cd.phone
+                                FROM job j 
+                            JOIN pool_details pd
+                                ON pd.pool_id = j.pool_id
+                            JOIN client_details cd
+                                ON cd.client_id = pd.client_id
+                            JOIN staff_job sj
+                                ON sj.job_id = j.job_id
+                            JOIN staff_details sd
+                                ON sj.staff_id = sd.staff_id
+                            WHERE
+                                sj.staff_id = ?
+                                AND
+                                j.status = 'new' OR j.status = 'pending'
+                            `;
+
+    pool.query(queryToGetJob, [id], (err, result) => {
         if (err) { 
             console.log("get job Error : ",err);
             res.send(err);
@@ -232,25 +252,36 @@ app.get('/getPendingJob',(req, res) => {
 
 
 // SELECT all COMPLETED job details from the JOB table
-app.get('/getCompletedJob',(req, res) => {
-    
-    const sqlGetCompletedJobQuery = "SELECT * FROM JOB WHERE status = 'COMPLETED'";
+app.post('/getCompletedJob',(req, res) => {
 
-    pool.query(sqlGetCompletedJobQuery, (err, result) => {
+    const id = req.body.staffID
+    console.log(id);
+
+    const queryToGetCompletedJob = `SELECT DISTINCT j.job_id, j.status, j.date
+                                        FROM job j 
+                                    JOIN staff_job sj
+                                        ON sj.job_id = j.job_id
+                                    WHERE
+                                        sj.staff_id = ?
+                                    AND
+                                        j.status = 'completed'
+                                    `;
+
+    pool.query(queryToGetCompletedJob, [id], (err, result) => {
         if (err) { 
             console.log("get job Error : ",err);
             res.send(err);
         }
         else {
             res.send(result);
-            // console.log(result);
+            console.log(result);
         }
     })
 })
 
 
-
-
+// reference sql query
+// https://stackoverflow.com/questions/12475850/sql-query-return-data-from-multiple-tables
 
 // reference to upload in BLOB type column
 // https://www.mysqltutorial.org/php-mysql-blob/
@@ -347,6 +378,38 @@ app.patch('/updateJobStatus/:jobId',(req, res) => {
 //     else { console.log('result: ', result) }
 // })
 
+// const query = `SELECT *
+//                     FROM job j 
+//                 JOIN staff_job sj
+//                     ON sj.job_id = j.job_id
+//                 WHERE
+//                     sj.staff_id = 100102
+//                 AND
+//                     j.status = 'completed'
+//                 `;
+
+// const query = `SELECT *
+//                         FROM job j 
+//                     JOIN pool_details pd
+//                         ON pd.pool_id = j.pool_id
+//                     JOIN client_details cd
+//                         ON cd.client_id = pd.client_id
+//                     JOIN staff_job sj
+//                         ON sj.job_id = j.job_id
+//                     WHERE
+//                         sj.staff_id = 100105
+//                         AND
+//                         j.status = 'new'
+//                     `;
+// pool.query(query, (err, result) => {
+//     if (err) { 
+//         console.log("get job Error : ",err);
+//     }
+//     else {
+//         console.log(result);
+//     }
+// })
+
 // TEST QUERY to INSERT into JOB
 // const sqlINSERT = 
 //     `INSERT INTO JOB (id, jobStatus, clientId, date, PS_ID, TS_ID, ptStaffName, ftStaffName, clientName, clientAddress, clientContact, completionImage) 
@@ -381,9 +444,6 @@ app.patch('/updateJobStatus/:jobId',(req, res) => {
 // }else{
 //     console.log("No Matched !");
 // }
-
-
-
 
 
 app.get('/', (req, res) => {
