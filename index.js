@@ -251,6 +251,7 @@ app.post('/getNewAndPendingJob',(req, res) => {
 })
 
 
+
 // SELECT all COMPLETED job details from the JOB table
 app.post('/getCompletedJob',(req, res) => {
 
@@ -280,20 +281,8 @@ app.post('/getCompletedJob',(req, res) => {
 })
 
 
-// reference sql query
-// https://stackoverflow.com/questions/12475850/sql-query-return-data-from-multiple-tables
-
-// reference to upload in BLOB type column
-// https://www.mysqltutorial.org/php-mysql-blob/
-
-
 // UPDATE a jobStatus in from JOB table
 app.patch('/updateJobStatus/:jobId',(req, res) => {
-    // console.log("req.files : ", req.files);
-    // console.log("req.body : ", req.body);
-
-    // need to use params 
-    // const id = req.params.jobId;
 
     const id = req.body.jobId;
     const remarks = req.body.jobRemarks;
@@ -301,7 +290,7 @@ app.patch('/updateJobStatus/:jobId',(req, res) => {
 
     // getting the file from the front-end
     const imgFile = req.files.jobImage;
-    console.log("imgFile",imgFile);
+    // console.log("imgFile",imgFile);
     // storing the file data into a variable
     const newImg = imgFile.data;
     // console.log("newImg",newImg);
@@ -328,121 +317,33 @@ app.patch('/updateJobStatus/:jobId',(req, res) => {
 
 //-------------------------------------- TEST QUERY --------------------------------------//
 
-// to register a new user
-// INSERT INTO USER_AUTH TABLES
-// const id = 100100;
-// const role = 'admin';
-// const username = 'admin';
-// const password = '123456';
-// const hashedPassword = md5(password);   // converting password into hash md5
-// const status = 0;
-// const newAccount = 1;
-
-// const sqlInsertUser = 
-//     "INSERT INTO STAFF_AUTH (staff_id, role, username, password, account_status, new_account) VALUES (?,?,?,?,?,?)";
-
-//     pool.query(sqlInsertUser, [ id, role, username, hashedPassword, status, newAccount], (err, result) => {
-//     if(err){ 
-//         console.log("INSERT into staff_auth error: ", err) 
-//     }
-//     else {
-//         console.log("Result: ", result);
-//         res.send(result);
-//     }
-// })
-
-// TEST QUERY to DELETE from USERS
-// const userId = 100101;
-// const sqlDELETE = 
-//     "DELETE FROM USER_AUTH WHERE userId = ?";
-// pool.query(sqlDELETE, userId, (err, result) => {
-//     if (err) { console.log('error: ', err); }
-//     else { console.log('result: ', result) }
-// })
-
-// TEST QUERY to DELETE from SECURITY_QUESTIONS
-// const staff_id = 100101;
-// const sqlDELETE = 
-//     "DELETE FROM SECURITY_QUESTIONS WHERE staff_id = ?";
-// pool.query(sqlDELETE, staff_id, (err, result) => {
-//     if (err) { console.log('error: ', err); }
-//     else { console.log('result: ', result) }
-// })
-
-// TEST QUERY to UPDATE from USERS
-// const userId = 100101;
-// const sqlUPDATE = 
-//     "UPDATE USER_AUTH SET userStatus = 1 WHERE userId = ?";
-// pool.query(sqlUPDATE, userId, (err, result) => {
-//     if (err) { console.log('error: ', err); }
-//     else { console.log('result: ', result) }
-// })
-
 // const query = `SELECT *
-//                     FROM job j 
-//                 JOIN staff_job sj
-//                     ON sj.job_id = j.job_id
-//                 WHERE
-//                     sj.staff_id = 100102
-//                 AND
-//                     j.status = 'completed'
-//                 `;
-// const queryToGetJob = `SELECT DISTINCT j.job_id, j.status, j.date, sd.full_name, cd.client_name, cd.address, cd.phone
-// FROM job j 
-// JOIN pool_details pd
-// ON pd.pool_id = j.pool_id
-// JOIN client_details cd
-// ON cd.client_id = pd.client_id
-// JOIN staff_job sj
-// ON sj.job_id = j.job_id
-// JOIN staff_details sd
-// ON sj.staff_id = sd.staff_id
-// WHERE
-// sj.staff_id = ?
-// AND
-// j.status = 'new' OR j.status = 'pending'
-// `;
-const query = `SELECT *
-                        FROM job j 
-                    JOIN pool_details pd
-                        ON pd.pool_id = j.pool_id
-                    JOIN client_details cd
-                        ON cd.client_id = pd.client_id
-                    JOIN staff_job sj
-                        ON sj.job_id = j.job_id
-                    WHERE
-                        sj.staff_id = 100115
-                        AND
-                        j.status = 'new'
-                    `;
-pool.query(query, (err, result) => {
-    if (err) { 
-        console.log("get job Error : ",err);
-    }
-    else {
-        console.log(result);
-    }
-})
-
-// TEST QUERY to INSERT into JOB
-// const sqlINSERT = 
-//     `INSERT INTO JOB (id, jobStatus, clientId, date, PS_ID, TS_ID, ptStaffName, ftStaffName, clientName, clientAddress, clientContact, completionImage) 
-//     VALUES (550092, 'PENDING', 'HT103', '01.08.2021', 100111, 100222, 'Part Time John', 'Full Time Ron', 'Mr. Apartment Client', '11, No Man Street', '011-420420', '')`;
-// pool.query(sqlINSERT, (err, result) => {
-//     console.log('error: ', err);
-//     console.log('result: ', result);
-// })
-
-// TEST QUERY to READ all JOB
-// const sqlGetJobQuery = "SELECT * FROM JOB";
-// pool.query(sqlGetJobQuery, (err, result) => {
+//                         FROM job j 
+//                     JOIN pool_details pd
+//                         ON pd.pool_id = j.pool_id
+//                     JOIN client_details cd
+//                         ON cd.client_id = pd.client_id
+//                     JOIN staff_job sj
+//                         ON sj.job_id = j.job_id
+//                     WHERE
+//                         sj.staff_id = 100115
+//                         AND
+//                         j.status = 'new'
+//                     `;
+// pool.query(query, (err, result) => {
 //     if (err) { 
-//         console.log("get job Error : ",err); 
+//         console.log("get job Error : ",err);
 //     }
 //     else {
 //         console.log(result);
 //     }
 // })
+
+// reference sql query
+// https://stackoverflow.com/questions/12475850/sql-query-return-data-from-multiple-tables
+
+// reference to upload in BLOB type column
+// https://www.mysqltutorial.org/php-mysql-blob/
 
 // TESTING hashing with md5 - package npm md5
 // const pass = '123456';
